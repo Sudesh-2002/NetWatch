@@ -11,6 +11,7 @@ function createMainWindow() {
         width: 1400,
         height: 900,
         title: 'NetWatch',
+        icon: path.join(__dirname, 'icon.png'),
         autoHideMenuBar: true,
         frame: true,
         titleBarStyle: 'default',
@@ -47,6 +48,7 @@ function createOverlayWindow() {
     overlayWindow = new BrowserWindow({
         width: 300,
         height: 500,
+        icon: path.join(__dirname, 'icon.png'),
         frame: false,
         transparent: true,
         alwaysOnTop: true,
@@ -72,14 +74,14 @@ function createOverlayWindow() {
     });
 }
 
+app.setAppUserModelId('com.netwatch.desktop');
+
 app.whenReady().then(() => {
 
     Menu.setApplicationMenu(null);
 
     createMainWindow();
-    // ✅ Overlay NOT created on startup — only on button press
 
-    // ─── IPC HANDLERS (inside whenReady so app is guaranteed ready) ──
     ipcMain.on('open-overlay', () => {
         createOverlayWindow();
     });
@@ -102,7 +104,7 @@ app.whenReady().then(() => {
         }
     });
 
-    // ─── PYTHON BACKEND ───────────────────────────────────────────
+    // PYTHON BACKEND
     const isPackaged = app.isPackaged;
 
     const backendPath = isPackaged
@@ -145,7 +147,7 @@ app.whenReady().then(() => {
         console.log("Python exited:", code);
     });
 
-    // ─── TRAY ─────────────────────────────────────────────────────
+    // TRAY
     const tray = new Tray(path.join(__dirname, 'icon.png'));
 
     const menu = Menu.buildFromTemplate([
