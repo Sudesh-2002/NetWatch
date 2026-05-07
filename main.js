@@ -11,17 +11,38 @@ function createMainWindow() {
         width: 1400,
         height: 900,
         title: 'NetWatch',
+        autoHideMenuBar: true,
+        frame: true,
+        titleBarStyle: 'default',
         backgroundColor: '#080b12',
+        show: false,
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
-            contextIsolation: true
+            contextIsolation: true,
+            nodeIntegration: false
         }
     });
 
+    mainWindow.once('ready-to-show', () => {
+        mainWindow.show();
+    });
+
     mainWindow.loadFile('frontend/index.html');
+    mainWindow.setMenuBarVisibility(false);
+    mainWindow.webContents.setVisualZoomLevelLimits(1, 1);
+    mainWindow.webContents.setZoomFactor(1);
+    mainWindow.webContents.on('devtools-opened', () => {
+        mainWindow.webContents.closeDevTools();
+    });
 }
 
 function createOverlayWindow() {
+    // If already open, just focus it
+    if (overlayWindow && !overlayWindow.isDestroyed()) {
+        overlayWindow.show();
+        overlayWindow.focus();
+        return;
+    }
 
     overlayWindow = new BrowserWindow({
         width: 300,
@@ -36,7 +57,8 @@ function createOverlayWindow() {
         title: 'NetWatch Overlay',
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
-            contextIsolation: true
+            contextIsolation: true,
+            nodeIntegration: false
         }
     });
 
@@ -44,49 +66,71 @@ function createOverlayWindow() {
     overlayWindow.setOpacity(0.92);
     overlayWindow.setIgnoreMouseEvents(false);
     overlayWindow.setVisibleOnAllWorkspaces(true);
+
+    overlayWindow.on('closed', () => {
+        overlayWindow = null;
+    });
 }
 
 app.whenReady().then(() => {
 
+    Menu.setApplicationMenu(null);
+
     createMainWindow();
-    createOverlayWindow();
+    // ✅ Overlay NOT created on startup — only on button press
 
-    // ==============================
-    // 🔥 FIXED PYTHON PATH LOGIC
-    // ==============================
+    // ─── IPC HANDLERS (inside whenReady so app is guaranteed ready) ──
+    ipcMain.on('open-overlay', () => {
+        createOverlayWindow();
+    });
 
+    ipcMain.on('close-overlay', () => {
+        if (overlayWindow && !overlayWindow.isDestroyed()) {
+            overlayWindow.close();
+        }
+    });
+
+    ipcMain.on('toggle-pin', (event, pinned) => {
+        if (overlayWindow && !overlayWindow.isDestroyed()) {
+            overlayWindow.setAlwaysOnTop(pinned);
+        }
+    });
+
+    ipcMain.on('set-opacity', (event, opacity) => {
+        if (overlayWindow && !overlayWindow.isDestroyed()) {
+            overlayWindow.setOpacity(opacity);
+        }
+    });
+
+    // ─── PYTHON BACKEND ───────────────────────────────────────────
     const isPackaged = app.isPackaged;
 
     const backendPath = isPackaged
         ? path.join(process.resourcesPath, 'backend', 'bridge.py')
         : path.join(__dirname, 'backend', 'bridge.py');
 
-    const pythonCmd =
-        process.platform === 'win32'
-            ? 'python'
-            : 'python3';
+    const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
 
     py = spawn(pythonCmd, [backendPath]);
 
     let buffer = '';
 
     py.stdout.on('data', (data) => {
-
         buffer += data.toString();
-
         const lines = buffer.split('\n');
         buffer = lines.pop();
 
         for (let line of lines) {
             line = line.trim();
             if (!line) continue;
-
             try {
                 const json = JSON.parse(line);
-
-                mainWindow.webContents.send('stats', json);
-                overlayWindow.webContents.send('stats', json);
-
+                if (mainWindow && !mainWindow.isDestroyed()) {
+                    mainWindow.webContents.send('stats', json);
+                }
+                if (overlayWindow && !overlayWindow.isDestroyed()) {
+                    overlayWindow.webContents.send('stats', json);
+                }
             } catch (e) {
                 console.log("JSON ERROR:", line);
             }
@@ -101,34 +145,28 @@ app.whenReady().then(() => {
         console.log("Python exited:", code);
     });
 
-    // Tray
+    // ─── TRAY ─────────────────────────────────────────────────────
     const tray = new Tray(path.join(__dirname, 'icon.png'));
 
     const menu = Menu.buildFromTemplate([
         {
             label: 'Show Main Window',
-            click: () => mainWindow.show()
+            click: () => mainWindow && mainWindow.show()
         },
         {
-            label: 'Toggle Overlay',
+            label: 'Open Mini Overlay',
+            click: () => createOverlayWindow()
+        },
+        {
+            label: 'Close Mini Overlay',
             click: () => {
-                overlayWindow.isVisible()
-                    ? overlayWindow.hide()
-                    : overlayWindow.show();
+                if (overlayWindow && !overlayWindow.isDestroyed()) overlayWindow.close();
             }
         },
-        {
-            label: 'Exit',
-            click: () => app.quit()
-        }
+        { type: 'separator' },
+        { label: 'Exit', click: () => app.quit() }
     ]);
 
     tray.setToolTip('NetWatch');
     tray.setContextMenu(menu);
-});
-
-ipcMain.on('set-opacity', (event, opacity) => {
-    if (overlayWindow) {
-        overlayWindow.setOpacity(opacity);
-    }
 });
