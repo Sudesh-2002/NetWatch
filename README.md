@@ -33,9 +33,9 @@ netwatch/
 ├── preload.js              # Context bridge (IPC between main ↔ renderer)
 ├── package.json
 ├── icon.png                # App icon (512×512 recommended)
-├── icon.ico                # App icon for Windows builds
 ├── backend/
 │   └── bridge.py           # Python backend — collects network stats via psutil
+│   └── monitor.py
 └── frontend/
     ├── index.html          # Main dashboard UI
     └── mini.html           # Mini overlay UI
