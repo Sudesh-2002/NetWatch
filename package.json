@@ -1,0 +1,43 @@
+{
+  "name": "netwatch",
+  "productName": "NetWatch",
+  "version": "1.0.0",
+  "description": "Desktop Network Monitor Overlay",
+  "main": "main.js",
+  "author": "Sudesh",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win portable"
+  },
+  "build": {
+    "appId": "com.netwatch.desktop",
+    "productName": "NetWatch",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*"
+    ],
+    "asar": false,
+    "extraResources": [
+      {
+        "from": "backend",
+        "to": "backend"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "artifactName": "NetWatch-Portable.exe"
+    }
+  },
+  "devDependencies": {
+    "electron": "^42.0.0",
+    "electron-builder": "^26.8.1"
+  }
+}

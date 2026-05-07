@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>NetWatch Mini</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: rgba(6, 8, 14, 0.92);
+    --border: rgba(0,200,255,0.2);
+    --dl: #00e5ff;
+    --ul: #ff6b35;
+    --green: #00ff88;
+    --dim: rgba(255,255,255,0.4);
+    --text: rgba(255,255,255,0.9);
+    --mono: 'JetBrains Mono', monospace;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  html, body {
+    width: 280px;
+    background: transparent;
+    overflow: hidden;
+  }
+
+  body {
+    -webkit-app-region: drag;
+  }
+
+  button, input {
+    -webkit-app-region: no-drag;
+  }
+
+  .overlay {
+    width: 280px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    font-family: var(--mono);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    overflow: hidden;
+    box-shadow: 0 4px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,229,255,0.05);
+    user-select: none;
+    cursor: move;
+  }
+
+  /* Drag handle */
+  .title-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px 7px;
+    background: rgba(0,229,255,0.05);
+    border-bottom: 1px solid rgba(0,229,255,0.1);
+  }
+
+  .title-bar-left {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .title-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+    animation: blink 1.5s ease-in-out infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .title-text {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--dl);
+  }
+
+  .title-right {
+    font-size: 8px;
+    color: var(--dim);
+    letter-spacing: 0.06em;
+  }
+
+  /* Speed block */
+  .speed-block {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: rgba(255,255,255,0.04);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .speed-cell {
+    padding: 10px 12px;
+    background: rgba(6,8,14,0.8);
+  }
+
+  .speed-cell:first-child {
+    border-right: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .speed-cell-label {
+    font-size: 8px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .speed-cell.dl .speed-cell-label { color: var(--dl); }
+  .speed-cell.ul .speed-cell-label { color: var(--ul); }
+
+  .speed-cell-value {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  .speed-cell.dl .speed-cell-value { color: var(--dl); text-shadow: 0 0 12px rgba(0,229,255,0.4); }
+  .speed-cell.ul .speed-cell-value { color: var(--ul); text-shadow: 0 0 12px rgba(255,107,53,0.4); }
+
+  .speed-cell-unit {
+    font-size: 9px;
+    font-weight: 400;
+    opacity: 0.6;
+    margin-left: 2px;
+  }
+
+  /* Mini sparklines */
+  .sparks {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: rgba(255,255,255,0.04);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .spark {
+    padding: 6px 12px;
+    background: rgba(6,8,14,0.8);
+  }
+
+  .spark:first-child { border-right: 1px solid rgba(255,255,255,0.04); }
+
+  .spark canvas { display: block; }
+
+  /* Total row */
+  .total-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: rgba(255,255,255,0.04);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .total-cell {
+    padding: 7px 12px;
+    background: rgba(6,8,14,0.8);
+  }
+
+  .total-cell:first-child { border-right: 1px solid rgba(255,255,255,0.04); }
+
+  .total-label {
+    font-size: 8px;
+    color: var(--dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+
+  .total-val {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  /* Top apps */
+  .section-title {
+    padding: 6px 12px 4px;
+    font-size: 8px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--dim);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .top-list { }
+
+  .top-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+
+  .top-item:last-child { border-bottom: none; }
+
+  .top-num {
+    font-size: 8px;
+    font-weight: 700;
+    color: var(--dl);
+    opacity: 0.6;
+    width: 10px;
+  }
+
+  .top-name {
+    flex: 1;
+    font-size: 10px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text);
+  }
+
+  .top-val {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--dl);
+  }
+
+  .top-val.ul-col { color: var(--ul); }
+
+  /* Section divider */
+  .div-line {
+    height: 1px;
+    background: rgba(0,229,255,0.08);
+  }
+
+  /* Footer */
+  .footer {
+    padding: 5px 12px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 8px;
+    color: var(--dim);
+  }
+
+  .open-btn {
+    font-size: 8px;
+    color: var(--dl);
+    text-decoration: none;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+  }
+
+  .open-btn:hover { opacity: 1; }
+
+  /* Resize hint */
+  .resize-grip {
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    width: 10px;
+    height: 10px;
+    opacity: 0.15;
+    cursor: se-resize;
+  }
+</style>
+</head>
+<body>
+
+<div class="overlay" id="overlay">
+
+  <div class="title-bar">
+    <div class="title-bar-left">
+      <div class="title-dot"></div>
+      <div class="title-text">NetWatch</div>
+    </div>
+    <div class="title-right" id="miniTime">00:00:00</div>
+  </div>
+
+  <!-- Speed -->
+  <div class="speed-block">
+    <div class="speed-cell dl">
+      <div class="speed-cell-label">↓ Download</div>
+      <div class="speed-cell-value" id="mDl">0<span class="speed-cell-unit">KB/s</span></div>
+    </div>
+    <div class="speed-cell ul">
+      <div class="speed-cell-label">↑ Upload</div>
+      <div class="speed-cell-value" id="mUl">0<span class="speed-cell-unit">KB/s</span></div>
+    </div>
+  </div>
+
+  <!-- Sparklines -->
+  <div class="sparks">
+    <div class="spark">
+      <canvas id="mDlSpark" width="116" height="32"></canvas>
+    </div>
+    <div class="spark">
+      <canvas id="mUlSpark" width="116" height="32"></canvas>
+    </div>
+  </div>
+
+  <!-- Totals -->
+  <div class="total-row">
+    <div class="total-cell">
+      <div class="total-label">↓ Session DL</div>
+      <div class="total-val" id="mSessDl">0 B</div>
+    </div>
+    <div class="total-cell">
+      <div class="total-label">↑ Session UL</div>
+      <div class="total-val" id="mSessUl">0 B</div>
+    </div>
+  </div>
+
+  <!-- Top 3 Speed -->
+  <div class="section-title">⚡ Top Speed</div>
+  <div class="top-list" id="mTopSpeed">
+    <div class="top-item"><div class="top-name" style="color:var(--dim)">Monitoring...</div></div>
+  </div>
+
+  <div class="div-line"></div>
+
+  <!-- Top 3 Usage -->
+  <div class="section-title">💾 Top Usage</div>
+  <div class="top-list" id="mTopUsage">
+    <div class="top-item"><div class="top-name" style="color:var(--dim)">Collecting...</div></div>
+  </div>
+
+  <div class="footer">
+    <span id="mFoot">Live — 1s refresh</span>
+    <a href="/" target="_blank" class="open-btn">Open Full ↗</a>
+    <div style="padding:8px 12px">
+      <input
+        type="range"
+        min="30"
+        max="100"
+        value="92"
+        id="opacitySlider"
+        style="width:100%"
+      >
+    </div>
+  </div>
+
+</div>
+
+<script>
+function fmtSpeed(bps) {
+  if (bps >= 1e9) return [(bps/1e9).toFixed(1), 'GB/s'];
+  if (bps >= 1e6) return [(bps/1e6).toFixed(1), 'MB/s'];
+  if (bps >= 1e3) return [(bps/1e3).toFixed(0), 'KB/s'];
+  return [bps.toFixed(0), 'B/s'];
+}
+
+function fmtBytes(b) {
+  if (b >= 1e9) return (b/1e9).toFixed(2) + 'GB';
+  if (b >= 1e6) return (b/1e6).toFixed(1) + 'MB';
+  if (b >= 1e3) return (b/1e3).toFixed(0) + 'KB';
+  return b.toFixed(0) + 'B';
+}
+
+function fmtTime(s) {
+  const h = Math.floor(s/3600).toString().padStart(2,'0');
+  const m = Math.floor((s%3600)/60).toString().padStart(2,'0');
+  return `${h}:${m}:${(s%60).toString().padStart(2,'0')}`;
+}
+
+// Mini sparklines
+function drawSpark(canvasId, data, color) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const max = Math.max(...data, 1);
+  const n = data.length;
+  const xOf = i => (i / (n-1)) * W;
+  const yOf = v => H - (v / max) * H * 0.9;
+
+  // Fill
+  ctx.beginPath();
+  ctx.moveTo(xOf(0), yOf(data[0]));
+  for (let i = 1; i < n; i++) ctx.lineTo(xOf(i), yOf(data[i]));
+  ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath();
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, color + '40');
+  g.addColorStop(1, 'transparent');
+  ctx.fillStyle = g;
+  ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  ctx.moveTo(xOf(0), yOf(data[0]));
+  for (let i = 1; i < n; i++) ctx.lineTo(xOf(i), yOf(data[i]));
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+}
+
+function update(data) {
+  const [dlV, dlU] = fmtSpeed(data.download_speed);
+  const [ulV, ulU] = fmtSpeed(data.upload_speed);
+
+  document.getElementById('mDl').innerHTML = `${dlV}<span class="speed-cell-unit">${dlU}</span>`;
+  document.getElementById('mUl').innerHTML = `${ulV}<span class="speed-cell-unit">${ulU}</span>`;
+  document.getElementById('mSessDl').textContent = fmtBytes(data.session_downloaded);
+  document.getElementById('mSessUl').textContent = fmtBytes(data.session_uploaded);
+  document.getElementById('miniTime').textContent = fmtTime(data.elapsed_seconds);
+
+  drawSpark('mDlSpark', data.dl_history, '#00e5ff');
+  drawSpark('mUlSpark', data.ul_history, '#ff6b35');
+
+  // Top speed
+  const speedApps = data.top_speed_apps || [];
+  if (speedApps.length > 0) {
+    document.getElementById('mTopSpeed').innerHTML = speedApps.map((a, i) => {
+      const [v, u] = fmtSpeed(a.dl_speed + a.ul_speed);
+      return `<div class="top-item">
+        <div class="top-num">${i+1}</div>
+        <div class="top-name">${a.name}</div>
+        <div class="top-val">${v}${u}</div>
+      </div>`;
+    }).join('');
+  } else {
+    document.getElementById('mTopSpeed').innerHTML = '<div class="top-item"><div class="top-name" style="color:rgba(255,255,255,0.3)">No active apps</div></div>';
+  }
+
+  // Top usage
+  const usageApps = data.top_usage_apps || [];
+  if (usageApps.length > 0) {
+    document.getElementById('mTopUsage').innerHTML = usageApps.map((a, i) => `
+      <div class="top-item">
+        <div class="top-num">${i+1}</div>
+        <div class="top-name">${a.name}</div>
+        <div class="top-val">${fmtBytes(a.total)}</div>
+      </div>`
+    ).join('');
+  } else {
+    document.getElementById('mTopUsage').innerHTML = '<div class="top-item"><div class="top-name" style="color:rgba(255,255,255,0.3)">Collecting...</div></div>';
+  }
+}
+
+// SSE
+function connect() {
+  
+}
+
+connect();
+document.getElementById('opacitySlider')
+.addEventListener('input', (e) => {
+
+    const value = e.target.value / 100;
+    window.electron.setOpacity(value);
+
+});
+</script>
+</body>
+</html>
+
+<script>
+  window.electron.receiveStats((data) => {
+      update(data);
+  });
+</script>
