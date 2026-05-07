@@ -18,7 +18,7 @@
 
   * { margin:0; padding:0; box-sizing:border-box; }
 
-  /* ✅ FIX: transparent html/body so OS shows through */
+  /* transparent html/body so OS shows through */
   html {
     background: transparent !important;
   }
@@ -47,7 +47,7 @@
     user-select: none;
   }
 
-  /* ─── TITLE BAR ─── */
+  /*  TITLE BAR  */
   .title-bar {
     display: flex;
     align-items: center;
@@ -98,7 +98,7 @@
     margin-right: 4px;
   }
 
-  /* ─── WINDOW CONTROL BUTTONS ─── */
+  /*  WINDOW CONTROL BUTTONS  */
   .win-btn {
     width: 20px;
     height: 20px;
@@ -141,7 +141,7 @@
     color: #ff5050;
   }
 
-  /* ─── SPEED BLOCK ─── */
+  /*  SPEED BLOCK  */
   .speed-block {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -186,7 +186,7 @@
     margin-left: 2px;
   }
 
-  /* ─── MINI SPARKLINES ─── */
+  /*  MINI SPARKLINES  */
   .sparks {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -203,7 +203,7 @@
   .spark:first-child { border-right: 1px solid rgba(255,255,255,0.04); }
   .spark canvas { display: block; }
 
-  /* ─── TOTALS ─── */
+  /*  TOTALS  */
   .total-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -233,7 +233,7 @@
     color: var(--text);
   }
 
-  /* ─── SECTION TITLES ─── */
+  /* SECTION TITLES  */
   .section-title {
     padding: 6px 12px 4px;
     font-size: 8px;
@@ -243,7 +243,7 @@
     border-bottom: 1px solid rgba(255,255,255,0.04);
   }
 
-  /* ─── TOP LISTS ─── */
+  /*  TOP LISTS  */
   .top-item {
     display: flex;
     align-items: center;
@@ -283,7 +283,7 @@
     background: rgba(0,229,255,0.08);
   }
 
-  /* ─── FOOTER ─── */
+  /* FOOTER */
   .footer {
     padding: 5px 12px;
     display: flex;
@@ -393,7 +393,7 @@
 </div>
 
 <script>
-// ─── UTILS ───────────────────────────────────────────────────────
+// UTILS
 function fmtSpeed(bps) {
   if (bps >= 1e9) return [(bps/1e9).toFixed(1), 'GB/s'];
   if (bps >= 1e6) return [(bps/1e6).toFixed(1), 'MB/s'];
@@ -414,8 +414,8 @@ function fmtTime(s) {
   return `${h}:${m}:${(s%60).toString().padStart(2,'0')}`;
 }
 
-// ─── PIN / CLOSE ─────────────────────────────────────────────────
-let isPinned = true; // starts pinned (alwaysOnTop is true by default)
+// PIN / CLOSE
+let isPinned = true;
 
 function togglePin() {
   isPinned = !isPinned;
@@ -432,7 +432,7 @@ function closeOverlay() {
 // Mark pin as active on load since alwaysOnTop starts true
 document.getElementById('btnPin').classList.add('pinned');
 
-// ─── SPARKLINES ──────────────────────────────────────────────────
+// SPARKLINES
 function drawSpark(canvasId, data, color) {
   const canvas = document.getElementById(canvasId);
   const ctx = canvas.getContext('2d');
@@ -463,7 +463,7 @@ function drawSpark(canvasId, data, color) {
   ctx.stroke();
 }
 
-// ─── UPDATE ──────────────────────────────────────────────────────
+// UPDATE
 function update(data) {
   const [dlV, dlU] = fmtSpeed(data.download_speed);
   const [ulV, ulU] = fmtSpeed(data.upload_speed);
@@ -507,12 +507,12 @@ function update(data) {
   }
 }
 
-// ─── OPACITY SLIDER ──────────────────────────────────────────────
+// OPACITY SLIDER
 document.getElementById('opacitySlider').addEventListener('input', (e) => {
   window.electron.setOpacity(e.target.value / 100);
 });
 
-// ─── RECEIVE STATS ───────────────────────────────────────────────
+// RECEIVE STATS
 window.electron.receiveStats((data) => {
   update(data);
 });
